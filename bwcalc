@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 # vim:et:sts=4:sw=4:si:fdm=marker
 
-# $Id: bwcalc,v 1.2 2004/10/12 20:14:33 madam Exp $
-
 # bwcalc  : bandwidth-time-size calculator
 #
 # author  : Michael Adam <bwcalc@obnox.de>
