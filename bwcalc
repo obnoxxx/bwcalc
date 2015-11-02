@@ -25,7 +25,7 @@ use POSIX qw(floor);
 
 my $Version = "0.2";
 my $Version_date = "2004-10-12";
-my $Email = "bwcalc\@obnox.de";
+my $Email = "obnox\@samba.org";
 my $Real_name = "Michael Adam";
 
 my $Debug = 0;
