@@ -1,0 +1,385 @@
+#!/usr/bin/env perl
+# vim:et:sts=4:sw=4:si:fdm=marker
+
+# $Id: bwcalc,v 1.2 2004/10/12 20:14:33 madam Exp $
+
+# bwcalc  : bandwidth-time-size calculator
+#
+# author  : Michael Adam <bwcalc@obnox.de>
+#
+# license : GPL (http://www.gnu.org/copyleft/gpl.html)
+#
+# history :
+#
+#   v0.1   2004-10-06  initial version (only binary units)
+#   v0.2   2004-10-12  release. 
+#                      changed format of input/output options.
+#                      input and output ICE binary and decimal units.
+#                   
+
+use strict;
+use warnings;
+
+use Getopt::Std;
+use POSIX qw(floor);
+
+# configuration {{{ -------------------------------------------------
+
+my $Version = "0.2";
+my $Version_date = "2004-10-12";
+my $Email = "bwcalc\@obnox.de";
+my $Real_name = "Michael Adam";
+
+my $Debug = 0;
+
+use constant ERR_OPTIONS_INPUT_THREE => 1;
+use constant ERR_OPTIONS_INPUT_MISS  => 2;
+use constant ERR_OUTPUT_FORMAT       => 3;
+use constant ERR_SYNTAX_BANDWIDTH    => 4;
+use constant ERR_SYNTAX_SIZE         => 5;
+use constant ERR_SYNTAX_TIME         => 6;
+use constant ERR_SYNTAX_PRECISION    => 7;
+
+my @errors = ();
+$errors[ERR_OPTIONS_INPUT_THREE] = "It makes no sense to give all three input options.";
+$errors[ERR_OPTIONS_INPUT_MISS]  = "Need at least one input option.";
+$errors[ERR_OUTPUT_FORMAT]       = "Invalid output format.";
+$errors[ERR_SYNTAX_BANDWIDTH]    = "Wrong bandwith syntax.";
+$errors[ERR_SYNTAX_SIZE]         = "Wrong size syntax.";
+$errors[ERR_SYNTAX_TIME]         = "Wrong time syntax.";
+$errors[ERR_SYNTAX_PRECISION]    = "Wrong precision syntax.";
+
+my $Precision = 2; # stellen hinter dem komma...
+
+my $Target;
+
+my $Bandwidth; # in bit/s
+my $Size;      # in byte
+my $Time;      # in s
+
+my $Bandwidth_default_unit = "b";
+my $Size_default_unit = "B";
+my $Time_default_unit = "s";
+
+my %Output_default_unit = (
+    "b" => "b",
+    "s" => "B",
+    #"t" => "b", # not used...
+);
+
+my %Prefix_factor = (
+    ""   => 1,
+    "K"  => 1000,
+    "Ki" => 1024,
+    "M"  => 1000000,
+    "Mi" => 1048576,
+    "G"  => 1000000000,
+    "Gi" => 1073741824,
+    "T"  => 1000000000000,
+    "Ti" => 1099511627776,
+);
+
+my %Unit_factor = (
+    "bit" => 1,
+    "b"   => 1,
+    "B"   => 8,
+);
+
+my $Output_prefix;
+my $Output_unit;
+my $Output_factor;
+my $Output_text;
+
+my $Recalculate = 0;
+
+my %Time_factor = (
+    "s" => 1,
+    "m" => 60,
+    "h" => 3600,
+    "d" => 86400,
+    "w" => 604800,
+);
+
+my %Unit_text = (
+    "b"   => "bit",
+    "bit" => "bit",
+    "B"   => "B",
+);
+
+my %Long_prefix_text = (
+    ""   => "",
+    "K"  => "kilo",
+    "Ki" => "kibi",
+    "M"  => "mega",
+    "Mi" => "mebi",
+    "G"  => "giga",
+    "Gi" => "gibi",
+    "T"  => "tera",
+    "Ti" => "tebi",
+);
+
+my %Long_unit_text = (
+    "b"   => "bit",
+    "bit" => "bit",
+    "B"   => "byte",
+);
+
+
+# configuration }}} -------------------------------------------------
+
+# analyse options {{{ -----------------------------------------------
+
+# options:
+# -------
+#   input:
+#    -s <size> 
+#    -t <time>
+#    -w <bandWidth>
+#
+#   output:
+#    -o <format> output prefix and unit
+#    -p <num> precision for rounding
+#    -l : long format
+
+my %options = ();
+
+getopts("s:b:t:o:p:lh", \%options);
+# input-options:
+
+if (keys %options == 0 or $options{h}) {
+    help();
+}
+
+if (exists($options{b}) and exists($options{s}) and exists($options{t})) {
+    error(ERR_OPTIONS_INPUT_THREE);
+}
+elsif (exists($options{b}) and exists($options{s})) {
+    $Target = "t";
+}
+elsif (exists($options{b}) and exists($options{t})) {
+    $Target = "s";
+}
+elsif (exists($options{t}) and exists($options{s})) {
+    $Target = "b";
+}
+else {
+    $Recalculate = 1; 
+    if (exists($options{s})) {
+        $Target = "s";
+    }
+    elsif (exists($options{b})) {
+        $Target = "b";
+    }
+    elsif (exists($options{t})) {
+        $Target = "t";
+    }
+    else {
+        error(ERR_OPTIONS_INPUT_MISS);
+    }
+}
+mydebug("target: $Target\n");
+
+if ($options{b}) {
+    if ($options{b} =~ /^(\d+(?:\.\d+)?)((?:[BKMGT]i?)?)([Bb]?)$/ ) {
+        my $bw_in = $1;
+        my $bw_prefix = $2; 
+        my $bw_unit = $3 || $Bandwidth_default_unit;
+        $Bandwidth = $bw_in * $Prefix_factor{$bw_prefix} * $Unit_factor{$bw_unit};
+        mydebug("bandwidth: $Bandwidth bit/s\n");
+    }
+    else {
+        error(ERR_SYNTAX_BANDWIDTH);
+    }
+}
+
+if ($options{s}) {
+    if ($options{s} =~ /^(\d+(?:\.\d+)?)((?:[BKMGT]i?)?)([Bb]?)$/ ) {
+        my $s_in = $1;
+        my $s_prefix = $2;
+        my $s_unit = $3 || $Size_default_unit;
+        $Size = $s_in * $Prefix_factor{$s_prefix} * $Unit_factor{$s_unit};
+        mydebug("size: $Size/$Unit_factor{B} bytes\n");
+    }
+    else {
+        error(ERR_SYNTAX_SIZE);
+    }
+}
+
+if ($options{t}) {
+    if ($options{t} =~ /^(\d+(?:\.\d+)?)([smhdw]?)$/) {
+        my $t_in = $1;
+        my $t_unit = $2 || $Time_default_unit;
+        $Time = $t_in * $Time_factor{$t_unit};
+        mydebug("time: $Time seconds\n");
+    }
+    else {
+        error(ERR_SYNTAX_TIME);
+    }
+}
+
+
+# output-options:
+
+if ($Target eq "b" or $Target eq "s") {
+    if ($options{o}) {
+        if ($options{o} =~ /^((?:[BKMGT]i?)?)([Bb]?)$/) {
+            $Output_prefix = $1;
+            $Output_unit = $2 || $Output_default_unit{$Target};
+        }
+        else {
+            error(ERR_OUTPUT_FORMAT);
+        }
+    }
+    else {
+        $Output_prefix = "";
+        $Output_unit = $Output_default_unit{$Target};
+    }
+    $Output_factor = $Prefix_factor{$Output_prefix} * $Unit_factor{$Output_unit};
+    if ($options{l}) {
+        $Output_text = "$Long_prefix_text{$Output_prefix}"
+                     . "$Long_unit_text{$Output_unit}";
+    }
+    else {
+        $Output_text = "$Output_prefix$Unit_text{$Output_unit}";
+    }
+}
+  
+if ($options{p}) {
+    if ($options{p} =~ /^\d+$/) {
+        $Precision = $options{p};
+    }
+    else {
+        error(ERR_SYNTAX_PRECISION);
+    }
+}
+mydebug("precision: $Precision\n");
+
+# analyse options }}} -----------------------------------------------
+
+# action {{{ -------------------------------------------------------
+
+if ($Target eq "t") {
+    $Time = $Size / $Bandwidth unless $Recalculate;
+    print format_time($Time) . "\n";
+}
+elsif ($Target eq "s") {
+    $Size = $Bandwidth * $Time unless $Recalculate;
+    my $scaled_size = $Size / $Output_factor;
+    printf "%." . $Precision . "f $Output_text\n", $scaled_size;
+}
+elsif ($Target eq "b") {
+    $Bandwidth = $Size / $Time unless $Recalculate;
+    my $scaled_bandwidth = $Bandwidth / $Output_factor;
+    printf "%." . $Precision . "f $Output_text/sec\n", 
+        $scaled_bandwidth;
+}
+
+# action }}} -------------------------------------------------------
+
+# functions {{{ -----------------------------------------------------
+
+sub error {
+    my $err_code = shift;
+    print "\n";
+    print "ERROR: $errors[$err_code]\n";
+    print "\n";
+    usage();
+    print "\n";
+    exit ($err_code);
+}
+
+sub help {
+    print "\n";
+    print "bwcalc - bandwidth/size/time calculator\n";
+    print "\n";
+    print "v$Version $Version_date $Real_name <$Email>\n";
+    print "\n";
+    usage();
+    print "\n";
+    exit(0);
+}
+
+sub usage {
+    print <<EOF;
+USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
+
+  One or two of the three input options -s, -b, -t can be given.
+  If only one is given, then the given value is transferred into
+  the desired output unit. If two are given, then the third entity 
+  is the target of the calculation. 
+
+  Input options format:
+
+  - Bandwidth: <number>[<unit>]  ("/sec" is omitted)
+  - Size:      <number>[<unit>]
+  - Time:      <number>[smhdw]?
+
+  The optional unit for bandwidth and size is of the form
+  [<prefix>][<base>] where prefix is one of K, Ki, M, Mi, G, Gi, T, Ti
+  and <base> can be "b" for bit and "B" for byte. The default
+  base unit is "b" for bandwidth and "B" for size.
+
+  The ouptut unit for size and bandwidth target can be given 
+  with the the -o options in the same way as for the input options. 
+  The default for the base unit is bit for bandwidth target and 
+  bytes for size target.
+
+  The precision for rounding output can be given with the "-p" switch. 
+
+  Long output format can be chosen with the "-l" switch.
+EOF
+}
+
+sub mydebug {
+    if ($Debug) {
+        print @_;
+    }
+}
+
+sub format_time {
+    my $time = shift;
+    # round correctly:
+    $time = floor($time + 0.5);
+    my $format = "";
+    my $sec = $time % 60;
+    $time = ( $time - $sec ) / 60;
+    if ($time) {
+        $format = sprintf("%02ds", $sec);
+        my $min = $time % 60;
+        $time = ($time - $min ) / 60; 
+        if ($time) {
+            $format = sprintf("%02dm$format", $min);
+            my $hour = $time % 24;
+            $time = ($time - $hour) / 24;
+            if ($time) {
+                $format = sprintf("%02dh$format", $hour);
+                my $day = $time % 7;
+                $time = ($time - $day) / 7;
+                if ($time) {
+                    $format = sprintf("%02dd$format", $day);
+                    $format = $time . "w$format";
+                }
+                else {
+                    $format = $day . "d$format";
+                }
+            }
+            else {
+                $format = $hour . "h$format";
+            }
+        }
+        else {
+            $format = $min . "m$format";
+        }
+    }
+    else {
+        $format = $sec . "s";
+    }
+    return $format;
+}
+
+# functions }}} -----------------------------------------------------
+
+#
+# ENTE
+#
+
