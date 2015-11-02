@@ -10,10 +10,10 @@
 # history :
 #
 #   v0.1   2004-10-06  initial version (only binary units)
-#   v0.2   2004-10-12  release. 
+#   v0.2   2004-10-12  release.
 #                      changed format of input/output options.
 #                      input and output ICE binary and decimal units.
-#                   
+#
 
 use strict;
 use warnings;
@@ -161,7 +161,7 @@ elsif (exists($options{t}) and exists($options{s})) {
     $Target = "b";
 }
 else {
-    $Recalculate = 1; 
+    $Recalculate = 1;
     if (exists($options{s})) {
         $Target = "s";
     }
@@ -180,7 +180,7 @@ mydebug("target: $Target\n");
 if ($options{b}) {
     if ($options{b} =~ /^(\d+(?:\.\d+)?)((?:[BKMGT]i?)?)([Bb]?)$/ ) {
         my $bw_in = $1;
-        my $bw_prefix = $2; 
+        my $bw_prefix = $2;
         my $bw_unit = $3 || $Bandwidth_default_unit;
         $Bandwidth = $bw_in * $Prefix_factor{$bw_prefix} * $Unit_factor{$bw_unit};
         mydebug("bandwidth: $Bandwidth bit/s\n");
@@ -241,7 +241,7 @@ if ($Target eq "b" or $Target eq "s") {
         $Output_text = "$Output_prefix$Unit_text{$Output_unit}";
     }
 }
-  
+
 if ($options{p}) {
     if ($options{p} =~ /^\d+$/) {
         $Precision = $options{p};
@@ -268,7 +268,7 @@ elsif ($Target eq "s") {
 elsif ($Target eq "b") {
     $Bandwidth = $Size / $Time unless $Recalculate;
     my $scaled_bandwidth = $Bandwidth / $Output_factor;
-    printf "%." . $Precision . "f $Output_text/sec\n", 
+    printf "%." . $Precision . "f $Output_text/sec\n",
         $scaled_bandwidth;
 }
 
@@ -303,8 +303,8 @@ USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
 
   One or two of the three input options -s, -b, -t can be given.
   If only one is given, then the given value is transferred into
-  the desired output unit. If two are given, then the third entity 
-  is the target of the calculation. 
+  the desired output unit. If two are given, then the third entity
+  is the target of the calculation.
 
   Input options format:
 
@@ -317,12 +317,12 @@ USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
   and <base> can be "b" for bit and "B" for byte. The default
   base unit is "b" for bandwidth and "B" for size.
 
-  The ouptut unit for size and bandwidth target can be given 
-  with the the -o options in the same way as for the input options. 
-  The default for the base unit is bit for bandwidth target and 
+  The ouptut unit for size and bandwidth target can be given
+  with the the -o options in the same way as for the input options.
+  The default for the base unit is bit for bandwidth target and
   bytes for size target.
 
-  The precision for rounding output can be given with the "-p" switch. 
+  The precision for rounding output can be given with the "-p" switch.
 
   Long output format can be chosen with the "-l" switch.
 EOF
@@ -344,7 +344,7 @@ sub format_time {
     if ($time) {
         $format = sprintf("%02ds", $sec);
         my $min = $time % 60;
-        $time = ($time - $min ) / 60; 
+        $time = ($time - $min ) / 60;
         if ($time) {
             $format = sprintf("%02dm$format", $min);
             my $hour = $time % 24;
