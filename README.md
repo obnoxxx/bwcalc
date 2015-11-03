@@ -1,4 +1,6 @@
-# bwcalc - a bandwidth/size/time calculator
+# bwcalc
+
+A bandwidth/size/time calculator and converter
 
 Version 0.2 2004-10-12
 
@@ -25,10 +27,10 @@ USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
   and <base> can be "b" for bit and "B" for byte. The default
   base unit is "b" for bandwidth and "B" for size.
 
-  The ouptut unit for size and bandwidth target can be given
-  with the the -o options in the same way as for the input options.
-  The default for the base unit is bit for bandwidth target and
-  bytes for size target.
+  The output unit for the size and bandwidth targets can be specified
+  with the the -o option in the same way as for the input options.
+  The default for the base unit is bit for the bandwidth target and
+  bytes for the size target.
 
   The precision for rounding output can be given with the "-p" switch.
 

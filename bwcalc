@@ -317,10 +317,10 @@ USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
   and <base> can be "b" for bit and "B" for byte. The default
   base unit is "b" for bandwidth and "B" for size.
 
-  The ouptut unit for size and bandwidth target can be given
-  with the the -o options in the same way as for the input options.
-  The default for the base unit is bit for bandwidth target and
-  bytes for size target.
+  The output unit for the size and bandwidth targets can be specified
+  with the the -o option in the same way as for the input options.
+  The default for the base unit is bit for the bandwidth target and
+  bytes for size the target.
 
   The precision for rounding output can be given with the "-p" switch.
 
