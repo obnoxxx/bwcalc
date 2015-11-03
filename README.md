@@ -2,10 +2,11 @@
 
 Version 0.2 2004-10-12
 
-Copyright (C) Michael Adam <obnox@samba.org> 2004,2015
+Copyright (C) Michael Adam (obnox@samba.org) 2004,2015
 
 License: GPLv3+
 
+```
 USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
 
   One or two of the three input options -s, -b, -t can be given.
@@ -32,4 +33,4 @@ USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
   The precision for rounding output can be given with the "-p" switch.
 
   Long output format can be chosen with the "-l" switch.
-
+```
