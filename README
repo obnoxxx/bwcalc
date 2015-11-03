@@ -1,6 +1,10 @@
-bwcalc - bandwidth/size/time calculator
+# bwcalc - a bandwidth/size/time calculator
 
-v0.2 2004-10-12 Michael Adam <obnox@samba.org>
+Version 0.2 2004-10-12
+
+Copyright (C) Michael Adam <obnox@samba.org> 2004,2015
+
+License: GPLv3+
 
 USAGE: bwcalc [-s <size>] [-t <time>] [-b <bw>] [-o <unit>] [-p <num>] [-l]
 
